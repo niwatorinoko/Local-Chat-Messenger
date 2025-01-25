@@ -1,14 +1,18 @@
 import socket
 import threading
 import time
+from faker import Faker
 
 # サーバ設定
 SERVER_ADDRESS = '/tmp/udp_chat_server'
 BUFFER_SIZE = 4096
-CLIENT_TIMEOUT = 60  # クライアントタイムアウト (秒)
+CLIENT_TIMEOUT = 60  # クライアントのタイムアウト (秒)
 
 # クライアント情報を管理する辞書 {address: last_active_time}
 clients = {}
+
+# Faker インスタンス
+faker = Faker()
 
 # クライアントの監視スレッド
 def monitor_clients():
@@ -52,11 +56,19 @@ def server_main():
 
             print(f"{username} ({client_address}): {message}")
 
-            # リレー用のメッセージを作成
+            # クライアント間のリレー用メッセージを作成
             relay_message = f"{username}: {message}".encode('utf-8')
             for client in clients.keys():
                 if client != client_address:
                     sock.sendto(relay_message, client)
+
+            # ランダムな応答を生成
+            fake_message = faker.text(max_nb_chars=50)
+            fake_response = f"[サーバー]: {fake_message}".encode('utf-8')
+
+            # サーバからの応答をすべてのクライアントにリレー
+            for client in clients.keys():
+                sock.sendto(fake_response, client)
 
         except Exception as e:
             print(f"エラー: {e}")
